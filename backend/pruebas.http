@@ -1,0 +1,63 @@
+GET http://localhost:5000
+
+###
+
+POST http://localhost:5000/api/users/register
+Content-Type: application/json
+
+{
+  "name": "Joaquin Piqueras",
+  "email": "joaquinpiqueras91@gmail.com",
+  "password": "homero",
+  "age": 34,
+  "location": "Albacete"
+}
+
+###
+
+POST http://localhost:5000/api/users/login
+Content-Type: application/json
+
+{
+  "email": "joaquinpiqueras91@gmail.com",
+  "password": "homero"
+}
+
+###
+
+POST http://localhost:5000/api/users/anonymous
+Content-Type: application/json
+
+{
+}
+
+###
+
+GET http://localhost:5000/api/users/check-ip/192.168.1.100
+
+###
+
+POST http://localhost:5000/api/polls
+Content-Type: application/json
+Authorization: Bearer TU_TOKEN_AQUI
+
+{
+  "question": "¿Cuál es tu lenguaje de programación favorito?",
+  "options": ["JavaScript", "Python", "Java", "C++"],
+  "isPrivate": false
+}
+
+###
+
+GET http://localhost:5000/api/polls/public
+
+###
+
+POST http://localhost:5000/api/votes
+Content-Type: application/json
+Authorization: Bearer TU_TOKEN_AQUI
+
+{
+  "pollId": "ID_DE_LA_ENCUESTA",
+  "selectedOption": "JavaScript"
+}

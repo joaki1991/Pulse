@@ -1,0 +1,58 @@
+# Variables de entorno
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencias de Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de logs
+logs
+*.log
+
+# Archivos temporales del sistema
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archivos de IDE/Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos de build/dist
+dist/
+build/
+coverage/
+
+# Archivos de prueba
+test-results/
+*.test.js.snap
+
+# Archivos de Cloudinary (imágenes de prueba locales)
+*.jpg
+*.jpeg
+*.png
+*.gif
+uploads/
+
+# Archivos de MongoDB locales
+data/
+
+# Cache
+.cache/
+.parcel-cache/
+
+# Archivos de ESLint
+.eslintcache
