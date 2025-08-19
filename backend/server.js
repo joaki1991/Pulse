@@ -3,13 +3,18 @@ import { corsMiddleware } from './middleware/cors.js'
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
 import { v2 as cloudinary } from 'cloudinary'
+import { connectToMemoryDB } from './db-memory.js'
 
 // Importar rutas
 import userRoutes from './routes/userRoute.js'
 import pollRoutes from './routes/pollRoute.js'
 import voteRoutes from './routes/voteRoute.js'
 
-dotenv.config()
+// Configurar dotenv con path explícito
+dotenv.config({ path: './backend/.env' })
+dotenv.config() // Fallback
+
+console.log('🔧 MONGO_URI:', process.env.MONGO_URI ? 'Configurado ✅' : 'No configurado ❌')
 
 // Configuración de Cloudinary
 cloudinary.config({
@@ -35,20 +40,33 @@ app.use((req, res, next) => {
 })
 
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI || 'mongodb://localhost:27017/pulse-dev')
   .then(() => console.log('✅ Conectado a MongoDB'))
-  .catch((err) => console.error('❌ Error conectando a MongoDB:', err))
+  .catch(async (err) => {
+    console.error('❌ Error conectando a MongoDB Atlas:', err.message)
+    console.log('🔄 Intentando base de datos en memoria...')
 
-const PORT = process.env.PORT || 5000
-app.listen(PORT, () =>
-  console.log(`Servidor en puerto ${PORT}: http://localhost:${PORT}`)
-)
+    try {
+      await connectToMemoryDB()
+    } catch (memoryErr) {
+      console.error('❌ Error con base de datos en memoria:', memoryErr.message)
+      console.log('💡 Para solucionar esto:')
+      console.log('   1. Configura tu IP en MongoDB Atlas: https://cloud.mongodb.com/')
+      console.log('   2. Ve a Network Access → Add IP Address → Add Current IP')
+      console.log('   3. La aplicación seguirá funcionando sin base de datos')
+    }
+  })
 
 // Rutas
 app.get('/', (req, res) => res.send('API Pulse funcionando ✅'))
 app.use('/api/users', userRoutes)
 app.use('/api/polls', pollRoutes)
 app.use('/api/votes', voteRoutes)
+
+const PORT = process.env.PORT || 5000
+app.listen(PORT, () =>
+  console.log(`Servidor en puerto ${PORT}: http://localhost:${PORT}`)
+)
 
 /** Para probar la subida de imágenes a Cloudinary
 cloudinary.uploader.upload('abuelos.jpg')

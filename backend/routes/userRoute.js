@@ -9,7 +9,7 @@ import {
   updateUser,
   deleteUser,
   checkUserByIP
-} from '../controllers/UserController.js'
+} from '../controllers/userController.js'
 import { authenticateToken } from '../middleware/auth.js'
 
 const router = Router()

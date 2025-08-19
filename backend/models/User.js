@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: false,
-    unique: true, // debe ser único en la colección
+    unique: true,
+    sparse: true, // Permite múltiples null/undefined
     match: [/^\S+@\S+\.\S+$/, 'Invalid Mail'] // regex para validar formato email
   },
   password: {
