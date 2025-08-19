@@ -3,7 +3,7 @@ import cors from 'cors'
 // Lista de orígenes aceptados
 const ACCEPTED_ORIGINS = [
   'http://localhost:5173',
-  'https://pulse-app.vercel.app'
+  'https://pulsesurveys.netlify.app'
 ]
 
 export const corsMiddleware = ({ acceptedOrigins = ACCEPTED_ORIGINS } = {}) =>
