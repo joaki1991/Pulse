@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Conexión API</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test de Conexión API - Pulse</h1>
+    
+    <div class="test-section">
+        <h2>📡 Configuración API</h2>
+        <p><strong>URL del Backend:</strong> <span id="api-url">https://bubbly-embrace-production.up.railway.app/api</span></p>
+        <p><strong>Frontend URL:</strong> <span id="frontend-url">https://pulsesurveys.netlify.app</span></p>
+    </div>
+
+    <div class="test-section">
+        <h2>🔬 Tests de Conectividad</h2>
+        <button onclick="testCORS()">🌐 Test CORS</button>
+        <button onclick="testAnonymousUser()">👤 Test Usuario Anónimo</button>
+        <button onclick="testPolls()">📊 Test Cargar Encuestas</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://bubbly-embrace-production.up.railway.app/api';
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('test-results');
+            const div = document.createElement('div');
+            div.className = `test-section ${type}`;
+            div.innerHTML = `<pre>${message}</pre>`;
+            results.appendChild(div);
+        }
+
+        async function testCORS() {
+            log('🌐 Probando CORS...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                log(`✅ CORS OK - Status: ${response.status}`, 'success');
+                const data = await response.text();
+                log(`Respuesta: ${data}`, 'info');
+            } catch (error) {
+                log(`❌ Error CORS: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAnonymousUser() {
+            log('👤 Probando creación de usuario anónimo...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/users/anonymous`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ Usuario anónimo creado exitosamente!`, 'success');
+                    log(`Usuario: ${JSON.stringify(data.user, null, 2)}`, 'info');
+                    log(`Token: ${data.token.substring(0, 50)}...`, 'info');
+                } else {
+                    const error = await response.json();
+                    log(`❌ Error ${response.status}: ${JSON.stringify(error, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error de red: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPolls() {
+            log('📊 Probando carga de encuestas...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/polls`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const polls = await response.json();
+                    log(`✅ Encuestas cargadas exitosamente!`, 'success');
+                    log(`Total de encuestas: ${polls.length}`, 'info');
+                    log(`Primeras 3 encuestas: ${JSON.stringify(polls.slice(0, 3), null, 2)}`, 'info');
+                } else {
+                    const error = await response.json();
+                    log(`❌ Error ${response.status}: ${JSON.stringify(error, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error de red: ${error.message}`, 'error');
+            }
+        }
+
+        // Test automático al cargar la página
+        window.onload = function() {
+            log('🚀 Página de test cargada desde: ' + window.location.origin, 'info');
+            log('📱 User Agent: ' + navigator.userAgent, 'info');
+        };
+    </script>
+</body>
+</html>
