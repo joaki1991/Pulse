@@ -1,0 +1,11 @@
+[variables]
+  NIXPACKS_NO_MUSL = "1"
+
+[phases.setup]
+  nixPkgs = ["nodejs_18", "npm"]
+
+[phases.install]
+  cmds = ["cd backend && npm ci"]
+
+[phases.start]
+  cmd = "cd backend && npm start"
