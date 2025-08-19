@@ -15,6 +15,7 @@ dotenv.config({ path: './backend/.env' })
 dotenv.config() // Fallback
 
 console.log('🔧 MONGO_URI:', process.env.MONGO_URI ? 'Configurado ✅' : 'No configurado ❌')
+console.log('🌐 CORS: Orígenes permitidos configurados ✅')
 
 // Configuración de Cloudinary
 cloudinary.config({
