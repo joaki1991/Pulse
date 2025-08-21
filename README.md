@@ -1,5 +1,11 @@
 # 🗳️ Pulse - Sistema de Encuestas
 
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)](https://reactjs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)](https://mongodb.com/)
+[![Express](https://img.shields.io/badge/Express-000000?style=flat&logo=express&logoColor=white)](https://expressjs.com/)
+
 Un sistema completo de encuestas con usuarios registrados y anónimos, desarrollado con **Node.js**, **React** y **MongoDB**.
 
 ## 🚀 Características
@@ -85,7 +91,28 @@ PORT=5000
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT.
+Este proyecto está disponible bajo diferentes licencias según el uso:
+
+### 🏠 **Uso Personal/Educativo** 
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+
+Para uso personal, educativo y no comercial, este proyecto está licenciado bajo [Creative Commons Attribution-NonCommercial 4.0](LICENSE).
+
+**Puedes:**
+- ✅ Usar el código para aprender
+- ✅ Modificar y adaptar para uso personal
+- ✅ Compartir con atribución
+
+**No puedes:**
+- ❌ Usar comercialmente sin permiso
+- ❌ Vender o monetizar directamente
+
+### 💼 **Uso Comercial**
+Para uso comercial, contacta al autor para obtener una licencia comercial.
+
+📧 **Contacto para licencia comercial:** [joaquinpiqueras91@gmail.com](mailto:joaquinpiqueras91@gmail.com)
+
+---
 
 ## 👨‍💻 Autor
 
