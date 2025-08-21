@@ -351,6 +351,17 @@ const PollDetail = () => {
               {poll.question}
             </h1>
 
+            {/* Poll Image */}
+            {poll.image && (
+              <div className="mb-6">
+                <img
+                  src={poll.image}
+                  alt="Imagen de la encuesta"
+                  className="w-full max-w-2xl h-64 object-cover rounded-lg border border-gray-200 shadow-sm"
+                />
+              </div>
+            )}
+
             <div className="flex items-center space-x-6 text-gray-600">
               <div className="flex items-center">
                 <BarChart3 size={18} className="mr-2" />

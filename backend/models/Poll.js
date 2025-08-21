@@ -11,6 +11,14 @@ const pollSchema = new mongoose.Schema({
     type: [String],
     validate: [arr => arr.length >= 2, 'At least two options are required']
   },
+  image: {
+    type: String, // URL de la imagen en Cloudinary
+    required: false
+  },
+  imagePublicId: {
+    type: String, // ID público de Cloudinary para eliminación
+    required: false
+  },
   creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

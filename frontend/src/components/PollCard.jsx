@@ -67,6 +67,17 @@ const PollCard = ({ poll }) => {
           {poll.question}
         </h3>
 
+        {/* Image */}
+        {poll.image && (
+          <div className="mb-4">
+            <img
+              src={poll.image}
+              alt="Imagen de la encuesta"
+              className="w-full h-48 object-cover rounded-lg border border-gray-200"
+            />
+          </div>
+        )}
+
         {/* Stats */}
         <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
           <div className="flex items-center space-x-4">

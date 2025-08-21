@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Image, Lock, Globe } from 'lucide-react'
+import { X, Plus, Trash2, Image, Lock, Globe, Upload, AlertCircle } from 'lucide-react'
 import { pollService } from '../services/pollService'
 import { useAuth } from '../context/AuthContext'
 import { useModal } from '../context/ModalContext'
@@ -10,9 +10,42 @@ const CreatePollModal = () => {
   const [question, setQuestion] = useState('')
   const [options, setOptions] = useState(['', ''])
   const [isPrivate, setIsPrivate] = useState(false)
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
   const [loading, setLoading] = useState(false)
   const { isAnonymous } = useAuth()
   const { showCreateModal, closeCreateModal } = useModal()
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        toast.error('Solo se permiten archivos de imagen')
+        return
+      }
+      
+      // Validar tamaño (5MB máximo)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('La imagen debe ser menor a 5MB')
+        return
+      }
+
+      setSelectedImage(file)
+      
+      // Crear preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreview(e.target.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -31,13 +64,17 @@ const CreatePollModal = () => {
 
     try {
       setLoading(true)
-      const pollData = {
-        question: question.trim(),
-        options: validOptions,
-        isPrivate
+      
+      const formData = new FormData()
+      formData.append('question', question.trim())
+      formData.append('options', JSON.stringify(validOptions))
+      formData.append('isPrivate', isPrivate.toString())
+      
+      if (selectedImage) {
+        formData.append('image', selectedImage)
       }
       
-      const newPoll = await pollService.createPoll(pollData)
+      const newPoll = await pollService.createPoll(formData)
       toast.success('¡Encuesta creada exitosamente!')
       handleReset()
       closeCreateModal()
@@ -56,6 +93,8 @@ const CreatePollModal = () => {
     setQuestion('')
     setOptions(['', ''])
     setIsPrivate(false)
+    setSelectedImage(null)
+    setImagePreview(null)
   }
 
   const addOption = () => {
@@ -176,6 +215,51 @@ const CreatePollModal = () => {
                   )}
                 </div>
 
+                {/* Image Upload - Solo para usuarios registrados */}
+                {!isAnonymous() && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Imagen (Opcional)
+                    </label>
+                    
+                    {!imagePreview ? (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="hidden"
+                          id="image-upload"
+                        />
+                        <label htmlFor="image-upload" className="cursor-pointer">
+                          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                          <p className="text-sm text-gray-600 mb-1">
+                            Haz clic para subir una imagen
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            PNG, JPG, WebP hasta 5MB
+                          </p>
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeImage}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Privacy Settings */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -228,7 +312,7 @@ const CreatePollModal = () => {
                 {isAnonymous() && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div className="flex items-start">
-                      <Image className="text-yellow-600 mr-3 mt-0.5" size={20} />
+                      <AlertCircle className="text-yellow-600 mr-3 mt-0.5" size={20} />
                       <div>
                         <p className="text-sm font-medium text-yellow-800">
                           Limitaciones de usuario anónimo

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Lock, Globe } from 'lucide-react'
+import { X, Plus, Trash2, Lock, Globe, Upload, AlertCircle } from 'lucide-react'
 import { pollService } from '../services/pollService'
 import { useModal } from '../context/ModalContext'
 import toast from 'react-hot-toast'
@@ -9,6 +9,9 @@ const EditPollModal = () => {
   const [question, setQuestion] = useState('')
   const [options, setOptions] = useState(['', ''])
   const [isPrivate, setIsPrivate] = useState(false)
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [currentImage, setCurrentImage] = useState(null)
   const [loading, setLoading] = useState(false)
   const { showEditModal, closeEditModal, editingPoll } = useModal()
 
@@ -18,8 +21,46 @@ const EditPollModal = () => {
       setQuestion(editingPoll.question || '')
       setOptions(editingPoll.options || ['', ''])
       setIsPrivate(editingPoll.isPrivate || false)
+      setCurrentImage(editingPoll.image || null)
+      setSelectedImage(null)
+      setImagePreview(null)
     }
   }, [showEditModal, editingPoll])
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        toast.error('Solo se permiten archivos de imagen')
+        return
+      }
+      
+      // Validar tamaño (5MB máximo)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('La imagen debe ser menor a 5MB')
+        return
+      }
+
+      setSelectedImage(file)
+      
+      // Crear preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreview(e.target.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeCurrentImage = () => {
+    setCurrentImage(null)
+  }
+
+  const removeNewImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -38,18 +79,40 @@ const EditPollModal = () => {
 
     try {
       setLoading(true)
-      const pollData = {
-        question: question.trim(),
-        options: validOptions,
-        isPrivate
+      
+      // Si hay una nueva imagen, usar FormData
+      if (selectedImage) {
+        const formData = new FormData()
+        formData.append('question', question.trim())
+        formData.append('options', JSON.stringify(validOptions))
+        formData.append('isPrivate', isPrivate.toString())
+        formData.append('image', selectedImage)
+        
+        await pollService.updatePoll(editingPoll._id, formData)
+      } else {
+        // Si no hay nueva imagen, usar JSON normal
+        const pollData = {
+          question: question.trim(),
+          options: validOptions,
+          isPrivate
+        }
+        
+        await pollService.updatePoll(editingPoll._id, pollData)
       }
       
-      await pollService.updatePoll(editingPoll._id, pollData)
       toast.success('¡Encuesta actualizada exitosamente!')
       handleClose()
       
       // Disparar evento personalizado para notificar que se actualizó una encuesta
-      window.dispatchEvent(new CustomEvent('pollUpdated', { detail: { ...editingPoll, ...pollData } }))
+      window.dispatchEvent(new CustomEvent('pollUpdated', { 
+        detail: { 
+          ...editingPoll, 
+          question: question.trim(),
+          options: validOptions,
+          isPrivate,
+          image: imagePreview || currentImage
+        } 
+      }))
     } catch (error) {
       const message = error.response?.data?.error || 'Error al actualizar la encuesta'
       toast.error(message)
@@ -177,6 +240,77 @@ const EditPollModal = () => {
                   )}
                 </div>
 
+                {/* Image Management */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Imagen
+                  </label>
+                  
+                  {/* Imagen actual */}
+                  {currentImage && !imagePreview && (
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-600 mb-2">Imagen actual:</p>
+                      <div className="relative">
+                        <img
+                          src={currentImage}
+                          alt="Imagen actual"
+                          className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeCurrentImage}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Nueva imagen */}
+                  {imagePreview && (
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-600 mb-2">Nueva imagen:</p>
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Nueva imagen"
+                          className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeNewImage}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Upload área */}
+                  {!imagePreview && (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                        id="image-upload-edit"
+                      />
+                      <label htmlFor="image-upload-edit" className="cursor-pointer">
+                        <Upload className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600 mb-1">
+                          {currentImage ? 'Cambiar imagen' : 'Agregar imagen'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, WebP hasta 5MB
+                        </p>
+                      </label>
+                    </div>
+                  )}
+                </div>
+
                 {/* Privacy Settings */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -230,9 +364,7 @@ const EditPollModal = () => {
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
-                        <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
+                        <AlertCircle className="w-5 h-5 text-amber-400" />
                       </div>
                       <div className="ml-3">
                         <p className="text-sm font-medium text-amber-800">

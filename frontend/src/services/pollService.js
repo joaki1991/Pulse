@@ -21,7 +21,16 @@ export const pollService = {
 
   // Crear nueva encuesta
   createPoll: async (pollData) => {
-    const response = await api.post('/polls', pollData)
+    const config = {}
+    
+    // Si es FormData (con imagen), configurar el Content-Type apropiado
+    if (pollData instanceof FormData) {
+      config.headers = {
+        'Content-Type': 'multipart/form-data'
+      }
+    }
+    
+    const response = await api.post('/polls', pollData, config)
     return response.data
   },
 
@@ -33,7 +42,16 @@ export const pollService = {
 
   // Actualizar encuesta
   updatePoll: async (id, pollData) => {
-    const response = await api.put(`/polls/${id}`, pollData)
+    const config = {}
+    
+    // Si es FormData (con imagen), configurar el Content-Type apropiado
+    if (pollData instanceof FormData) {
+      config.headers = {
+        'Content-Type': 'multipart/form-data'
+      }
+    }
+    
+    const response = await api.put(`/polls/${id}`, pollData, config)
     return response.data
   },
 

@@ -1,10 +1,27 @@
 import Poll from '../models/Poll.js'
 import Vote from '../models/Vote.js'
+import { uploadToCloudinary, deleteFromCloudinary } from '../middleware/upload.js'
 
 // 🔹 1. Crear nueva encuesta
 export const createPoll = async (req, res) => {
   try {
-    const { question, options, isPrivate } = req.body
+    let { question, options, isPrivate } = req.body
+
+    // Si viene como FormData, las opciones pueden ser un string JSON
+    if (typeof options === 'string') {
+      try {
+        options = JSON.parse(options)
+      } catch (parseError) {
+        return res.status(400).json({
+          error: 'Invalid options format'
+        })
+      }
+    }
+
+    // Convertir isPrivate a boolean si viene como string
+    if (typeof isPrivate === 'string') {
+      isPrivate = isPrivate === 'true'
+    }
 
     if (!question || !options || !Array.isArray(options) || options.length < 2) {
       return res.status(400).json({
@@ -12,13 +29,25 @@ export const createPoll = async (req, res) => {
       })
     }
 
-    const poll = new Poll({
+    const pollData = {
       question,
       options,
       creator: req.user.id,
       isPrivate: isPrivate || false
-    })
+    }
 
+    // Si hay una imagen, subirla a Cloudinary
+    if (req.file) {
+      try {
+        const uploadResult = await uploadToCloudinary(req.file.buffer, req.file.originalname)
+        pollData.image = uploadResult.secure_url
+        pollData.imagePublicId = uploadResult.public_id
+      } catch (uploadError) {
+        return res.status(400).json({ error: 'Error al subir la imagen: ' + uploadError.message })
+      }
+    }
+
+    const poll = new Poll(pollData)
     await poll.save()
     await poll.populate('creator', 'name avatar')
 
@@ -141,7 +170,23 @@ export const getUserPolls = async (req, res) => {
 export const updatePoll = async (req, res) => {
   try {
     const { id } = req.params
-    const { question, options, isPrivate } = req.body
+    let { question, options, isPrivate } = req.body
+
+    // Si viene como FormData, las opciones pueden ser un string JSON
+    if (typeof options === 'string') {
+      try {
+        options = JSON.parse(options)
+      } catch (parseError) {
+        return res.status(400).json({
+          error: 'Invalid options format'
+        })
+      }
+    }
+
+    // Convertir isPrivate a boolean si viene como string
+    if (typeof isPrivate === 'string') {
+      isPrivate = isPrivate === 'true'
+    }
 
     const poll = await Poll.findById(id)
     if (!poll) {
@@ -168,6 +213,23 @@ export const updatePoll = async (req, res) => {
     }
     if (typeof isPrivate === 'boolean') updates.isPrivate = isPrivate
 
+    // Manejar actualización de imagen
+    if (req.file) {
+      try {
+        // Si ya tenía una imagen, eliminar la anterior de Cloudinary
+        if (poll.imagePublicId) {
+          await deleteFromCloudinary(poll.imagePublicId)
+        }
+
+        // Subir nueva imagen
+        const imageUrl = await uploadToCloudinary(req.file.buffer, `polls/${id}`)
+        updates.image = imageUrl.secure_url
+        updates.imagePublicId = imageUrl.public_id
+      } catch (imageError) {
+        return res.status(400).json({ error: 'Error uploading image: ' + imageError.message })
+      }
+    }
+
     const updatedPoll = await Poll.findByIdAndUpdate(id, updates, { new: true })
       .populate('creator', 'name avatar')
 
@@ -190,6 +252,16 @@ export const deletePoll = async (req, res) => {
     // Verificar que sea el creador
     if (poll.creator.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Only the creator can delete this poll' })
+    }
+
+    // Eliminar imagen de Cloudinary si existe
+    if (poll.imagePublicId) {
+      try {
+        await deleteFromCloudinary(poll.imagePublicId)
+      } catch (imageError) {
+        console.error('Error deleting image from Cloudinary:', imageError)
+        // Continuar con la eliminación de la encuesta aunque falle la imagen
+      }
     }
 
     // Eliminar todos los votos asociados
