@@ -213,12 +213,17 @@ export const searchPolls = async (req, res) => {
       return res.status(400).json({ error: 'Search query is required' })
     }
 
+    // Buscar tanto en la pregunta como en las opciones
     const polls = await Poll.find({
       isPrivate: false,
-      question: new RegExp(q, 'i')
+      $or: [
+        { question: new RegExp(q, 'i') },
+        { options: { $elemMatch: { $regex: q, $options: 'i' } } }
+      ]
     })
       .populate('creator', 'name avatar')
       .sort({ createdAt: -1 })
+      .limit(50) // Limitar resultados para mejor performance
 
     // Agregar conteo de votos
     const pollsWithVotes = await Promise.all(

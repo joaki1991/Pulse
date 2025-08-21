@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Plus, TrendingUp, Users, BarChart3 } from 'lucide-react'
+import { Search, Plus, TrendingUp, Users, BarChart3, X, Loader2 } from 'lucide-react'
 import { useInView } from 'react-intersection-observer'
 import { pollService } from '../services/pollService'
 import PollCard from '../components/PollCard'
@@ -11,10 +11,15 @@ import toast from 'react-hot-toast'
 const Home = () => {
   const [polls, setPolls] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchLoading, setSearchLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [typedText, setTypedText] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
   const { isAnonymous } = useAuth()
   const { openCreateModal } = useModal()
+  
+  // Ref para hacer scroll a la sección de encuestas
+  const pollsSectionRef = useRef(null)
   
   const fullText = "Descubre opiniones, crea encuestas y conecta con la comunidad"
 
@@ -27,6 +32,58 @@ const Home = () => {
     triggerOnce: true,
     threshold: 0.1
   })
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async (term) => {
+      if (!term.trim()) {
+        setIsSearching(false)
+        await loadPolls()
+        return
+      }
+
+      try {
+        setSearchLoading(true)
+        setIsSearching(true)
+        const data = await pollService.searchPolls(term)
+        setPolls(data)
+        
+        // Hacer scroll a la sección de resultados después de que se complete la búsqueda
+        setTimeout(() => {
+          scrollToPollsSection()
+        }, 300)
+      } catch (error) {
+        console.error('Search error:', error)
+        toast.error('Error en la búsqueda')
+      } finally {
+        setSearchLoading(false)
+      }
+    }, 500),
+    []
+  )
+
+  // Debounce utility function
+  function debounce(func, wait) {
+    let timeout
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout)
+        func(...args)
+      }
+      clearTimeout(timeout)
+      timeout = setTimeout(later, wait)
+    }
+  }
+
+  // Función para hacer scroll suave a la sección de encuestas
+  const scrollToPollsSection = () => {
+    if (pollsSectionRef.current) {
+      pollsSectionRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }
+  }
 
   // Efecto de escritura para el subtítulo
   useEffect(() => {
@@ -61,12 +118,24 @@ const Home = () => {
     }
   }, [])
 
+  // Effect for search term changes (debounced search)
+  useEffect(() => {
+    if (searchTerm !== '') {
+      debouncedSearch(searchTerm)
+    } else if (isSearching) {
+      // If search term is cleared, reload all polls
+      setIsSearching(false)
+      loadPolls()
+    }
+  }, [searchTerm, debouncedSearch, isSearching])
+
   const loadPolls = async () => {
     try {
       setLoading(true)
       const data = await pollService.getPublicPolls()
       setPolls(data)
-    } catch {
+    } catch (error) {
+      console.error('Load polls error:', error)
       toast.error('Error al cargar las encuestas')
     } finally {
       setLoading(false)
@@ -76,19 +145,26 @@ const Home = () => {
   const handleSearch = async (e) => {
     e.preventDefault()
     if (!searchTerm.trim()) {
-      loadPolls()
+      clearSearch()
       return
     }
-
-    try {
-      setLoading(true)
-      const data = await pollService.searchPolls(searchTerm)
-      setPolls(data)
-    } catch {
-      toast.error('Error en la búsqueda')
-    } finally {
-      setLoading(false)
+    
+    // Si ya hay un término de búsqueda, hacer scroll inmediatamente
+    // La búsqueda se maneja automáticamente por el debounced effect
+    if (isSearching && polls.length > 0) {
+      scrollToPollsSection()
     }
+  }
+
+  const clearSearch = () => {
+    setSearchTerm('')
+    setIsSearching(false)
+    loadPolls()
+  }
+
+  const handleSearchInputChange = (e) => {
+    const value = e.target.value
+    setSearchTerm(value)
   }
 
   const stats = [
@@ -129,16 +205,45 @@ const Home = () => {
                   type="text"
                   placeholder="Buscar encuestas..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl text-gray-900 text-lg focus:outline-none focus:ring-4 focus:ring-white/20"
+                  onChange={handleSearchInputChange}
+                  className="w-full pl-12 pr-20 py-4 rounded-xl text-gray-900 text-lg focus:outline-none focus:ring-4 focus:ring-white/20 transition-all"
                 />
-                <button
-                  type="submit"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-accent-500 hover:bg-accent-600 text-white px-6 py-2 rounded-lg transition-colors"
-                >
-                  Buscar
-                </button>
+                
+                {/* Loading indicator or clear button */}
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                  {searchLoading ? (
+                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                  ) : searchTerm ? (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Limpiar búsqueda"
+                    >
+                      <X size={16} />
+                    </button>
+                  ) : null}
+                  
+                  <button
+                    type="submit"
+                    disabled={searchLoading}
+                    className="bg-accent-500 hover:bg-accent-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    {searchLoading ? 'Buscando...' : 'Buscar'}
+                  </button>
+                </div>
               </div>
+              
+              {/* Search status */}
+              {isSearching && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-3 text-center text-white/80"
+                >
+                  Buscando "{searchTerm}"... {polls.length} resultado{polls.length !== 1 ? 's' : ''} encontrado{polls.length !== 1 ? 's' : ''}
+                </motion.div>
+              )}
             </motion.form>
 
             {/* Create Poll Button */}
@@ -178,18 +283,21 @@ const Home = () => {
       </section>
 
       {/* Polls Section */}
-      <section className="py-16 px-4 bg-white">
+      <section ref={pollsSectionRef} className="py-16 px-4 bg-white">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Encuestas Populares
+              {isSearching ? `Resultados para "${searchTerm}"` : 'Encuestas Populares'}
             </h2>
             <p className="text-xl text-gray-600">
-              Participa en las conversaciones más interesantes
+              {isSearching 
+                ? `${polls.length} encuesta${polls.length !== 1 ? 's' : ''} encontrada${polls.length !== 1 ? 's' : ''}`
+                : 'Participa en las conversaciones más interesantes'
+              }
             </p>
           </div>
 
-          {loading ? (
+          {loading || searchLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-gray-200 rounded-xl h-64 animate-pulse"></div>
@@ -204,17 +312,31 @@ const Home = () => {
           ) : (
             <div className="text-center py-12">
               <h3 className="text-2xl font-semibold text-gray-700 mb-4">
-                No se encontraron encuestas
+                {isSearching 
+                  ? `No se encontraron encuestas para "${searchTerm}"`
+                  : 'No se encontraron encuestas'
+                }
               </h3>
               <p className="text-gray-600 mb-6">
-                Sé el primero en crear una encuesta
+                {isSearching 
+                  ? 'Intenta con otros términos de búsqueda'
+                  : 'Sé el primero en crear una encuesta'
+                }
               </p>
+              {isSearching ? (
+                <button
+                  onClick={clearSearch}
+                  className="btn-secondary mr-4"
+                >
+                  Ver todas las encuestas
+                </button>
+              ) : null}
               <button
                 onClick={openCreateModal}
                 className="btn-primary flex items-center mx-auto"
               >
                 <Plus className="mr-2" size={20} />
-                Crear Primera Encuesta
+                {isSearching ? 'Crear Nueva Encuesta' : 'Crear Primera Encuesta'}
               </button>
             </div>
           )}
