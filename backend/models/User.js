@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true, // En caso de ser invitado, se usará la IP como nombre
+    required: true, // En caso de ser invitado, se usará un nombre generado aleatoriamente
     unique: true,
     minlength: [3, 'Name must be at least 3 characters']
   },
@@ -23,6 +23,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     required: true,
     default: true
+  },
+  anonymousId: {
+    type: String,
+    required: false, // Solo para usuarios anónimos, almacena la IP para identificación
+    unique: true,
+    sparse: true // Permite múltiples null/undefined
   },
   age: {
     type: Number,

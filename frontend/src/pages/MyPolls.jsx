@@ -11,7 +11,7 @@ const MyPolls = () => {
   const [polls, setPolls] = useState([])
   const [loading, setLoading] = useState(true)
   const { isAnonymous } = useAuth()
-  const { openCreateModal } = useModal()
+  const { openCreateModal, openEditModal } = useModal()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -27,10 +27,20 @@ const MyPolls = () => {
       setPolls(prev => [newPoll, ...prev])
     }
     
+    // Escuchar cuando se actualiza una encuesta
+    const handlePollUpdated = (event) => {
+      const updatedPoll = event.detail
+      setPolls(prev => prev.map(poll => 
+        poll._id === updatedPoll._id ? { ...poll, ...updatedPoll } : poll
+      ))
+    }
+    
     window.addEventListener('pollCreated', handlePollCreated)
+    window.addEventListener('pollUpdated', handlePollUpdated)
     
     return () => {
       window.removeEventListener('pollCreated', handlePollCreated)
+      window.removeEventListener('pollUpdated', handlePollUpdated)
     }
   }, [isAnonymous, navigate])
 
@@ -205,7 +215,7 @@ const MyPolls = () => {
                       </button>
                       
                       <button
-                        onClick={() => {/* TODO: Implement edit */}}
+                        onClick={() => openEditModal(poll)}
                         className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                         title="Editar encuesta"
                       >

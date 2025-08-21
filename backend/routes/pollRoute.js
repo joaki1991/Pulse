@@ -6,7 +6,8 @@ import {
   getUserPolls,
   updatePoll,
   deletePoll,
-  searchPolls
+  searchPolls,
+  getPollDemographics
 } from '../controllers/pollController.js'
 import { authenticateToken, optionalAuth } from '../middleware/auth.js'
 
@@ -20,6 +21,7 @@ router.get('/:id', optionalAuth, getPollById) // Obtener encuesta por ID (auth o
 // 🔹 Rutas protegidas (requieren autenticación)
 router.post('/', authenticateToken, createPoll) // Crear nueva encuesta
 router.get('/user/my-polls', authenticateToken, getUserPolls) // Obtener encuestas del usuario
+router.get('/:id/demographics', authenticateToken, getPollDemographics) // Obtener demografía de votantes
 router.put('/:id', authenticateToken, updatePoll) // Actualizar encuesta
 router.delete('/:id', authenticateToken, deletePoll) // Eliminar encuesta
 

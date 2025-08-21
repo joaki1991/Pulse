@@ -41,5 +41,11 @@ export const pollService = {
   deletePoll: async (id) => {
     const response = await api.delete(`/polls/${id}`)
     return response.data
+  },
+
+  // Obtener información demográfica de los votantes
+  getPollDemographics: async (id) => {
+    const response = await api.get(`/polls/${id}/demographics`)
+    return response.data
   }
 }

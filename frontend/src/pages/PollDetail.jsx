@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, User, Clock, BarChart3, Check, Edit, Trash2 } from 'lucide-react'
+import { ArrowLeft, User, Clock, BarChart3, Check, Edit, Trash2, Share2, Copy, ExternalLink } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { pollService } from '../services/pollService'
 import { voteService } from '../services/voteService'
 import { useAuth } from '../context/AuthContext'
+import { useModal } from '../context/ModalContext'
+import PollDemographics from '../components/PollDemographics'
 import toast from 'react-hot-toast'
 
 const PollDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { openEditModal } = useModal()
   
   const [poll, setPoll] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -19,10 +22,34 @@ const PollDetail = () => {
   const [selectedOption, setSelectedOption] = useState('')
   const [hasVoted, setHasVoted] = useState(false)
   const [userVote, setUserVote] = useState(null)
+  const [showShareMenu, setShowShareMenu] = useState(false)
 
   useEffect(() => {
     loadPoll()
-  }, [id])
+    
+    // Escuchar cuando se actualiza una encuesta
+    const handlePollUpdated = (event) => {
+      const updatedPoll = event.detail
+      if (updatedPoll._id === id) {
+        setPoll(prev => ({ ...prev, ...updatedPoll }))
+      }
+    }
+    
+    // Cerrar menú de compartir al hacer clic fuera
+    const handleClickOutside = (event) => {
+      if (showShareMenu && !event.target.closest('.share-menu-container')) {
+        setShowShareMenu(false)
+      }
+    }
+    
+    window.addEventListener('pollUpdated', handlePollUpdated)
+    document.addEventListener('mousedown', handleClickOutside)
+    
+    return () => {
+      window.removeEventListener('pollUpdated', handlePollUpdated)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [id, showShareMenu])
 
   const loadPoll = async () => {
     try {
@@ -78,6 +105,85 @@ const PollDetail = () => {
     } catch (error) {
       toast.error('Error al eliminar el voto')
     }
+  }
+
+  const handleEditPoll = () => {
+    openEditModal(poll)
+  }
+
+  const handleDeletePoll = async () => {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta encuesta? Esta acción no se puede deshacer.')) {
+      return
+    }
+
+    try {
+      await pollService.deletePoll(poll._id)
+      toast.success('Encuesta eliminada exitosamente')
+      navigate('/my-polls')
+    } catch (error) {
+      const message = error.response?.data?.error || 'Error al eliminar la encuesta'
+      toast.error(message)
+    }
+  }
+
+  const handleCopyLink = async () => {
+    const url = window.location.href
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success('Enlace copiado al portapapeles')
+      setShowShareMenu(false)
+    } catch (error) {
+      // Fallback para navegadores que no soportan clipboard API
+      const textArea = document.createElement('textarea')
+      textArea.value = url
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      toast.success('Enlace copiado al portapapeles')
+      setShowShareMenu(false)
+    }
+  }
+
+  const handleNativeShare = async () => {
+    const url = window.location.href
+    const shareData = {
+      title: poll.question,
+      text: `¡Participa en esta encuesta! ${poll.question}`,
+      url: url
+    }
+
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+        setShowShareMenu(false)
+      } else {
+        // Fallback: abrir en WhatsApp Web
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`¡Participa en esta encuesta! ${poll.question} ${url}`)}`
+        window.open(whatsappUrl, '_blank')
+        setShowShareMenu(false)
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        toast.error('Error al compartir')
+      }
+    }
+  }
+
+  const handleShareToWhatsApp = () => {
+    const url = window.location.href
+    const text = `¡Participa en esta encuesta! ${poll.question}`
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`
+    window.open(whatsappUrl, '_blank')
+    setShowShareMenu(false)
+  }
+
+  const handleShareToTwitter = () => {
+    const url = window.location.href
+    const text = `¡Participa en esta encuesta! ${poll.question}`
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
+    window.open(twitterUrl, '_blank')
+    setShowShareMenu(false)
   }
 
   const isCreator = user && poll && poll.creator._id === user._id
@@ -160,16 +266,85 @@ const PollDetail = () => {
                 </div>
               </div>
 
-              {isCreator && (
-                <div className="flex space-x-2">
-                  <button className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
-                    <Edit size={18} />
+              <div className="flex space-x-2">
+                {/* Botón de compartir */}
+                <div className="relative share-menu-container">
+                  <button 
+                    onClick={() => setShowShareMenu(!showShareMenu)}
+                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Compartir encuesta"
+                  >
+                    <Share2 size={18} />
                   </button>
-                  <button className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                    <Trash2 size={18} />
-                  </button>
+                  
+                  {/* Menú desplegable de compartir */}
+                  {showShareMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                    >
+                      <div className="py-2">
+                        <button
+                          onClick={handleCopyLink}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        >
+                          <Copy size={16} className="mr-2" />
+                          Copiar enlace
+                        </button>
+                        
+                        {navigator.share ? (
+                          <button
+                            onClick={handleNativeShare}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          >
+                            <Share2 size={16} className="mr-2" />
+                            Compartir
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={handleShareToWhatsApp}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                            >
+                              <ExternalLink size={16} className="mr-2" />
+                              WhatsApp
+                            </button>
+                            <button
+                              onClick={handleShareToTwitter}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                            >
+                              <ExternalLink size={16} className="mr-2" />
+                              Twitter
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
-              )}
+
+                {/* Botones de editar/eliminar para el creador */}
+                {isCreator && (
+                  <>
+                    <button 
+                      onClick={handleEditPoll}
+                      className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                      title="Editar encuesta"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button 
+                      onClick={handleDeletePoll}
+                      className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Eliminar encuesta"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
@@ -340,6 +515,13 @@ const PollDetail = () => {
             )}
           </div>
         </div>
+
+        {/* Demographics Section for Poll Creators */}
+        {isCreator && (
+          <div className="mt-8">
+            <PollDemographics pollId={poll._id} isCreator={isCreator} />
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import User from '../models/User.js'
 import bcrypt from 'bcryptjs'
 import { generateToken } from '../utils/jwt.js'
+import { generateConsistentAnonymousName } from '../utils/nameGenerator.js'
 
 const SALT_ROUNDS = 10
 
@@ -10,13 +11,21 @@ export const createAnonymousUser = async (req, res) => {
     const ip = req.realIP || req.ip || req.connection.remoteAddress
     if (!ip) return res.status(400).json({ error: 'IP not found' })
 
-    const existingUser = await User.findOne({ name: ip })
+    // Buscar usuario existente por IP usando un campo interno
+    const existingUser = await User.findOne({ anonymousId: ip })
     if (existingUser) {
       const token = generateToken(existingUser)
       return res.status(200).json({ user: existingUser, token })
     }
 
-    const newUser = new User({ name: ip, isAnonymous: true })
+    // Generar nombre aleatorio consistente basado en la IP
+    const anonymousName = generateConsistentAnonymousName(ip)
+
+    const newUser = new User({
+      name: anonymousName,
+      anonymousId: ip, // Campo interno para identificar por IP
+      isAnonymous: true
+    })
     await newUser.save()
 
     const token = generateToken(newUser)
@@ -154,7 +163,7 @@ export const checkUserByIP = async (req, res) => {
     const { ip } = req.params
     if (!ip) return res.status(400).json({ error: 'IP is required' })
 
-    const existingUser = await User.findOne({ name: ip, isAnonymous: true })
+    const existingUser = await User.findOne({ anonymousId: ip, isAnonymous: true })
     const exists = !!existingUser
 
     res.status(200).json({ exists, user: existingUser || null })

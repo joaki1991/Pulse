@@ -248,3 +248,88 @@ export const searchPolls = async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 }
+
+// 🔹 8. Obtener información demográfica de los votantes (solo para creadores de la encuesta)
+export const getPollDemographics = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    // Verificar que la encuesta existe
+    const poll = await Poll.findById(id).populate('creator')
+    if (!poll) {
+      return res.status(404).json({ error: 'Poll not found' })
+    }
+
+    // Verificar que el usuario es el creador de la encuesta
+    if (poll.creator._id.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied. Only poll creator can view demographics.' })
+    }
+
+    // Obtener todos los votos con información del usuario
+    const votes = await Vote.find({ poll: id })
+      .populate('user', 'name age location isAnonymous anonymousId')
+
+    // Procesar datos demográficos
+    const demographics = {
+      totalVotes: votes.length,
+      ageDistribution: {},
+      locationDistribution: {},
+      userTypes: {
+        registered: 0,
+        anonymous: 0
+      },
+      votesByOption: {},
+      timeline: []
+    }
+
+    votes.forEach(vote => {
+      const user = vote.user
+
+      // Contar tipos de usuario
+      if (user.isAnonymous) {
+        demographics.userTypes.anonymous++
+      } else {
+        demographics.userTypes.registered++
+      }
+
+      // Distribución por edad (solo usuarios registrados)
+      if (!user.isAnonymous && user.age) {
+        const ageGroup = getAgeGroup(user.age)
+        demographics.ageDistribution[ageGroup] = (demographics.ageDistribution[ageGroup] || 0) + 1
+      }
+
+      // Distribución por ubicación (solo usuarios registrados)
+      if (!user.isAnonymous && user.location) {
+        demographics.locationDistribution[user.location] = (demographics.locationDistribution[user.location] || 0) + 1
+      }
+
+      // Votos por opción
+      demographics.votesByOption[vote.selectedOption] = (demographics.votesByOption[vote.selectedOption] || 0) + 1
+
+      // Timeline de votos
+      demographics.timeline.push({
+        date: vote.votedAt,
+        option: vote.selectedOption,
+        userType: user.isAnonymous ? 'anonymous' : 'registered'
+      })
+    })
+
+    // Ordenar timeline por fecha
+    demographics.timeline.sort((a, b) => new Date(a.date) - new Date(b.date))
+
+    res.status(200).json(demographics)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+// Función auxiliar para agrupar edades
+const getAgeGroup = (age) => {
+  if (age < 18) return '< 18'
+  if (age < 25) return '18-24'
+  if (age < 35) return '25-34'
+  if (age < 45) return '35-44'
+  if (age < 55) return '45-54'
+  if (age < 65) return '55-64'
+  return '65+'
+}

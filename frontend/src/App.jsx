@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 import { ModalProvider } from './context/ModalContext'
 import Navbar from './components/Navbar'
 import CreatePollModal from './components/CreatePollModal'
+import EditPollModal from './components/EditPollModal'
 import Home from './pages/Home'
 import PollDetail from './pages/PollDetail'
 import Auth from './pages/Auth'
@@ -50,8 +51,9 @@ function App() {
               <Route path="/my-polls" element={<MyPolls />} />
             </Routes>
 
-            {/* Modal global para crear encuestas */}
+            {/* Modales globales */}
             <CreatePollModal />
+            <EditPollModal />
           </div>
         </Router>
       </ModalProvider>
