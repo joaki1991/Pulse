@@ -7,10 +7,12 @@ import {
   getUser,
   filterUser,
   updateUser,
+  updateUserAvatar,
   deleteUser,
   checkUserByIP
 } from '../controllers/userController.js'
 import { authenticateToken } from '../middleware/auth.js'
+import { upload } from '../middleware/upload.js'
 
 const router = Router()
 
@@ -25,6 +27,7 @@ router.get('/', authenticateToken, getAllUsers) // Obtener todos los usuarios
 router.get('/search', authenticateToken, filterUser) // Filtrar usuarios por nombre/email
 router.get('/:id', authenticateToken, getUser) // Obtener usuario por ID
 router.put('/:id', authenticateToken, updateUser) // Actualizar usuario
+router.put('/:id/avatar', authenticateToken, upload.single('avatar'), updateUserAvatar) // Actualizar avatar
 router.delete('/:id', authenticateToken, deleteUser) // Eliminar usuario
 
 export default router

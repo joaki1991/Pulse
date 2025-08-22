@@ -10,6 +10,7 @@ import PollDetail from './pages/PollDetail'
 import Auth from './pages/Auth'
 import Explore from './pages/Explore'
 import MyPolls from './pages/MyPolls'
+import Profile from './pages/Profile'
 import './App.css'
 
 function App() {
@@ -49,6 +50,7 @@ function App() {
               <Route path="/auth" element={<Auth />} />
               <Route path="/explore" element={<Explore />} />
               <Route path="/my-polls" element={<MyPolls />} />
+              <Route path="/profile" element={<Profile />} />
             </Routes>
 
             {/* Modales globales */}

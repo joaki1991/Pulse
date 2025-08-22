@@ -42,6 +42,10 @@ const userSchema = new mongoose.Schema({
     type: String, // URL de la imagen en Cloudinary
     required: false
   },
+  avatarPublicId: {
+    type: String, // ID público de Cloudinary para eliminación
+    required: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

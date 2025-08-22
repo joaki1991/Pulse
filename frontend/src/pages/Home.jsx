@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Plus, TrendingUp, Users, BarChart3, X, Loader2 } from 'lucide-react'
 import { useInView } from 'react-intersection-observer'
+import { useNavigate } from 'react-router-dom'
 import { pollService } from '../services/pollService'
 import PollCard from '../components/PollCard'
 import { useAuth } from '../context/AuthContext'
@@ -17,6 +18,7 @@ const Home = () => {
   const [isSearching, setIsSearching] = useState(false)
   const { isAnonymous } = useAuth()
   const { openCreateModal } = useModal()
+  const navigate = useNavigate()
   
   // Ref para hacer scroll a la sección de encuestas
   const pollsSectionRef = useRef(null)
@@ -165,6 +167,10 @@ const Home = () => {
   const handleSearchInputChange = (e) => {
     const value = e.target.value
     setSearchTerm(value)
+  }
+
+  const handleRegisterClick = () => {
+    navigate('/auth')
   }
 
   const stats = [
@@ -353,9 +359,14 @@ const Home = () => {
             <p className="text-xl mb-8 opacity-90">
               Regístrate para crear encuestas con imágenes y acceder a estadísticas avanzadas.
             </p>
-            <button className="btn-primary bg-white text-gray-900 hover:bg-gray-100">
+            <motion.button 
+              onClick={handleRegisterClick}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="btn-primary bg-white text-gray-900 hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
               Registrarse Gratis
-            </button>
+            </motion.button>
           </div>
         </section>
       )}

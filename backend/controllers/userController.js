@@ -2,6 +2,7 @@ import User from '../models/User.js'
 import bcrypt from 'bcryptjs'
 import { generateToken } from '../utils/jwt.js'
 import { generateConsistentAnonymousName } from '../utils/nameGenerator.js'
+import { uploadToCloudinary, deleteFromCloudinary } from '../middleware/upload.js'
 
 const SALT_ROUNDS = 10
 
@@ -157,7 +158,54 @@ export const deleteUser = async (req, res) => {
   }
 }
 
-// 🔹 9. Verificar si un usuario ya está registrado con una IP
+// 🔹 9. Actualizar avatar de usuario
+export const updateUserAvatar = async (req, res) => {
+  try {
+    const { id } = req.params
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se proporcionó ninguna imagen' })
+    }
+
+    // Obtener el usuario actual
+    const user = await User.findById(id)
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    // Si el usuario ya tenía un avatar, eliminar el anterior de Cloudinary
+    if (user.avatarPublicId) {
+      try {
+        await deleteFromCloudinary(user.avatarPublicId)
+      } catch (deleteError) {
+        console.error('Error deleting old avatar:', deleteError)
+      }
+    }
+
+    // Subir nueva imagen a Cloudinary
+    try {
+      const uploadResult = await uploadToCloudinary(req.file.buffer, `avatars/${id}`)
+      
+      // Actualizar usuario con nueva imagen
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        {
+          avatar: uploadResult.secure_url,
+          avatarPublicId: uploadResult.public_id
+        },
+        { new: true }
+      )
+
+      res.status(200).json(updatedUser)
+    } catch (uploadError) {
+      return res.status(400).json({ error: 'Error al subir la imagen: ' + uploadError.message })
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+// 🔹 10. Verificar si un usuario ya está registrado con una IP
 export const checkUserByIP = async (req, res) => {
   try {
     const { ip } = req.params
