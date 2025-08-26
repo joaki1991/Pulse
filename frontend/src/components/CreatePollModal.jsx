@@ -98,7 +98,7 @@ const CreatePollModal = () => {
   }
 
   const addOption = () => {
-    if (options.length < 6) {
+    if (options.length < 10) {
       setOptions([...options, ''])
     }
   }
@@ -203,7 +203,7 @@ const CreatePollModal = () => {
                     ))}
                   </div>
                   
-                  {options.length < 6 && (
+                  {options.length < 10 && (
                     <button
                       type="button"
                       onClick={addOption}

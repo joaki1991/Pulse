@@ -13,7 +13,7 @@ import toast from 'react-hot-toast'
 const PollDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isAnonymous } = useAuth()
   const { openEditModal } = useModal()
   
   const [poll, setPoll] = useState(null)
@@ -528,7 +528,7 @@ const PollDetail = () => {
         </div>
 
         {/* Demographics Section for Poll Creators */}
-        {isCreator && (
+        {isCreator && !isAnonymous() && (
           <div className="mt-8">
             <PollDemographics pollId={poll._id} isCreator={isCreator} />
           </div>

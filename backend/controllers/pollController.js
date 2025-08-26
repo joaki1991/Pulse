@@ -104,12 +104,6 @@ export const getPollById = async (req, res) => {
     if (!poll) {
       return res.status(404).json({ error: 'Poll not found' })
     }
-
-    // Verificar si es privada y el usuario no es el creador
-    if (poll.isPrivate && (!req.user || poll.creator._id.toString() !== req.user.id)) {
-      return res.status(403).json({ error: 'This poll is private' })
-    }
-
     // Obtener resultados de votos
     const voteCounts = await Vote.aggregate([
       { $match: { poll: poll._id } },

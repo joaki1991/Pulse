@@ -15,10 +15,6 @@ const MyPolls = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (isAnonymous()) {
-      navigate('/')
-      return
-    }
     loadPolls()
     
     // Escuchar cuando se crea una nueva encuesta
@@ -42,7 +38,7 @@ const MyPolls = () => {
       window.removeEventListener('pollCreated', handlePollCreated)
       window.removeEventListener('pollUpdated', handlePollUpdated)
     }
-  }, [isAnonymous, navigate])
+  }, [])
 
   const loadPolls = async () => {
     try {
@@ -78,10 +74,6 @@ const MyPolls = () => {
     })
   }
 
-  if (isAnonymous()) {
-    return null
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -93,10 +85,13 @@ const MyPolls = () => {
         >
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Mis Encuestas
+              {isAnonymous() ? 'Mis Encuestas (Sesión Actual)' : 'Mis Encuestas'}
             </h1>
             <p className="text-gray-600">
-              Gestiona y analiza tus encuestas creadas
+              {isAnonymous() 
+                ? 'Encuestas creadas en esta sesión' 
+                : 'Gestiona y analiza tus encuestas creadas'
+              }
             </p>
           </div>
           

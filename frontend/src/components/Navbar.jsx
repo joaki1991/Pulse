@@ -52,14 +52,12 @@ const Navbar = () => {
             >
               Explorar
             </Link>
-            {!isAnonymous() && (
-              <Link
-                to="/my-polls"
-                className="text-gray-700 hover:text-primary-600 transition-colors font-medium"
-              >
-                Mis Encuestas
-              </Link>
-            )}
+            <Link
+              to="/my-polls"
+              className="text-gray-700 hover:text-primary-600 transition-colors font-medium"
+            >
+              Mis Encuestas
+            </Link>
           </div>
 
           {/* User Menu */}
@@ -175,15 +173,13 @@ const Navbar = () => {
                 >
                   Explorar
                 </Link>
-                {!isAnonymous() && (
-                  <Link
-                    to="/my-polls"
-                    className="block text-gray-700 hover:text-primary-600 transition-colors font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Mis Encuestas
-                  </Link>
-                )}
+                <Link
+                  to="/my-polls"
+                  className="block text-gray-700 hover:text-primary-600 transition-colors font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Mis Encuestas
+                </Link>
 
                 <hr className="border-gray-200" />
 
